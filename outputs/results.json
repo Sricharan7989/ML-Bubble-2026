@@ -1,0 +1,153 @@
+{
+  "dataset": {
+    "n_samples": 30000,
+    "n_features": 42,
+    "default_rate": 0.2212,
+    "split": {
+      "train": 19200,
+      "val": 4800,
+      "test": 6000
+    }
+  },
+  "val_auprc": {
+    "Logistic Regression": 0.493,
+    "Random Forest": 0.5508,
+    "XGBoost": 0.5582,
+    "LightGBM": 0.5555
+  },
+  "winner": "XGBoost",
+  "cost_threshold": {
+    "ratio_fn_fp": "5:1",
+    "optimal_threshold": 0.375,
+    "test": {
+      "cost@0.5": 0.5667,
+      "cost@opt": 0.5565,
+      "relative_savings": 0.0179
+    }
+  },
+  "comparison": [
+    {
+      "model": "XGBoost",
+      "AUROC": 0.7799,
+      "AUPRC": 0.5612,
+      "Brier": 0.1758,
+      "precision@thr": 0.3616,
+      "recall@thr": 0.7679,
+      "f1@thr": 0.4917,
+      "threshold": 0.375
+    },
+    {
+      "model": "Random Forest",
+      "AUROC": 0.7792,
+      "AUPRC": 0.5556,
+      "Brier": 0.18,
+      "precision@thr": 0.3553,
+      "recall@thr": 0.7792,
+      "f1@thr": 0.4881,
+      "threshold": 0.375
+    },
+    {
+      "model": "LightGBM",
+      "AUROC": 0.7724,
+      "AUPRC": 0.5478,
+      "Brier": 0.1735,
+      "precision@thr": 0.3747,
+      "recall@thr": 0.7438,
+      "f1@thr": 0.4984,
+      "threshold": 0.375
+    },
+    {
+      "model": "Logistic Regression",
+      "AUROC": 0.7441,
+      "AUPRC": 0.5003,
+      "Brier": 0.193,
+      "precision@thr": 0.3611,
+      "recall@thr": 0.7249,
+      "f1@thr": 0.4821,
+      "threshold": 0.375
+    }
+  ],
+  "fairness": {
+    "target_tpr": 0.7679,
+    "group_thresholds": {
+      "1": 0.4,
+      "2": 0.38
+    },
+    "before": [
+      {
+        "group": "Male",
+        "n": 2402,
+        "selection_rate": 0.4858,
+        "TPR": 0.7772,
+        "FPR": 0.3971
+      },
+      {
+        "group": "Female",
+        "n": 3598,
+        "selection_rate": 0.4589,
+        "TPR": 0.7611,
+        "FPR": 0.3771
+      }
+    ],
+    "after": [
+      {
+        "group": "Male",
+        "threshold": 0.4,
+        "n": 2402,
+        "selection_rate": 0.4459,
+        "TPR": 0.7433,
+        "FPR": 0.3552
+      },
+      {
+        "group": "Female",
+        "threshold": 0.38,
+        "n": 3598,
+        "selection_rate": 0.4491,
+        "TPR": 0.7546,
+        "FPR": 0.3665
+      }
+    ],
+    "gaps_before": {
+      "demographic_parity_diff": 0.0269,
+      "equal_opportunity_diff": 0.0161,
+      "fpr_diff": 0.02,
+      "disparate_impact_ratio": 0.9446
+    },
+    "gaps_after": {
+      "demographic_parity_diff": 0.0032,
+      "equal_opportunity_diff": 0.0113,
+      "fpr_diff": 0.0113,
+      "disparate_impact_ratio": 0.9929
+    }
+  },
+  "explainability": {
+    "example_applicant_risk": 0.9618,
+    "reason_codes": [
+      {
+        "feature": "PAY_1",
+        "shap": 0.9385,
+        "value": 3.0
+      },
+      {
+        "feature": "DELINQ_MONTHS",
+        "shap": 0.5687,
+        "value": 6.0
+      },
+      {
+        "feature": "MAX_DELAY",
+        "shap": 0.3907,
+        "value": 3.0
+      },
+      {
+        "feature": "MEAN_DELAY",
+        "shap": 0.1975,
+        "value": 2.1667
+      },
+      {
+        "feature": "PAYRATIO_MEAN",
+        "shap": 0.1368,
+        "value": 0.0
+      }
+    ]
+  }
+}
