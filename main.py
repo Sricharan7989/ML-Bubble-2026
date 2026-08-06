@@ -9,13 +9,13 @@ Reproduce:  python main.py
 """
 from __future__ import annotations
 import json
-import pickle
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from src.data_prep import prepare, split, PROTECTED
+from src.persistence import save_model, load_model, save_feature_names
 from src.train import build_models, pos_weight_from, fit_all
 from src.evaluate import proba, compare, rank_metrics, threshold_metrics, \
     plot_curves, plot_metric_bars
@@ -49,10 +49,32 @@ def main():
     # ---- 2. Train four models --------------------------------------------
     models = build_models(pos_weight_from(ytr))
     fitted = fit_all(models, Xtr, ytr)
+
+    # Persist in each library's own portable format (never pickle a booster),
+    # plus the canonical feature order that serving code must reindex to.
+    save_feature_names(cols, MODELS)
+    saved = {name: save_model(name, m, MODELS) for name, m in fitted.items()}
+
+    # Reproducibility check: every model must reload and score identically.
+    reload_max_diff = {}
     for name, m in fitted.items():
-        with open(MODELS / f"{name.replace(' ', '_').lower()}.pkl", "wb") as f:
-            pickle.dump(m, f)
-    print(f"[train] fitted + saved {len(fitted)} models")
+        ref = proba(m, Xva)
+        got = proba(load_model(name, MODELS), Xva)
+        d = float(np.max(np.abs(ref - got)))
+        reload_max_diff[name] = d
+        if d > 1e-6:
+            raise RuntimeError(
+                f"{name}: reloaded model disagrees with the fitted one "
+                f"(max |Δp| = {d:.2e}) — persistence is broken.")
+    results["persistence"] = {
+        "files": {n: p.name for n, p in saved.items()},
+        "feature_names": "feature_names.json",
+        "reload_max_abs_prob_diff": {n: float(f"{d:.2e}")
+                                     for n, d in reload_max_diff.items()},
+    }
+    print(f"[train] fitted + saved {len(fitted)} models "
+          f"({', '.join(p.suffix for p in saved.values())}); "
+          f"all reload bit-identical")
 
     # ---- 3. Pick winner by validation AUPRC ------------------------------
     val_scores = {n: rank_metrics(yva, proba(m, Xva))["AUPRC"]
@@ -90,13 +112,16 @@ def main():
     # ---- 6. Fairness audit + mitigation (winner) -------------------------
     before = audit(yte, p_te, sex_te, thr_opt)
     gaps_before = summary_gaps(before)
-    # target TPR = overall recall at cost-opt threshold, equalised across groups
-    overall_tpr = threshold_metrics(yte, p_te, thr_opt)["recall"]
+    # Target TPR = overall recall at the cost-optimal threshold, equalised across
+    # groups. Measured on VALIDATION: deriving it from test and then applying the
+    # result to test would leak the test set into the mitigation.
+    overall_tpr = threshold_metrics(yva, p_val, thr_opt)["recall"]
     eo_thr = equal_opportunity_thresholds(yva, p_val, sex_val, overall_tpr)
     after = audit_grouped_thresholds(yte, p_te, sex_te, eo_thr)
-    gaps_after = summary_gaps(after.rename(columns={}))
+    gaps_after = summary_gaps(after)
     plot_fairness(before, after, OUT / "fairness_audit.png")
     results["fairness"] = {
+        "target_tpr_source": "validation",
         "target_tpr": round(float(overall_tpr), 4),
         "group_thresholds": {int(k): v for k, v in eo_thr.items()},
         "before": before.to_dict(orient="records"),
@@ -124,7 +149,9 @@ def main():
         print("[shap] global summary + reason codes written")
     except Exception as e:  # SHAP only supports tree winners cleanly
         results["explainability"] = {"error": str(e)}
-        print(f"[shap] skipped: {e}")
+        # Loud, because explainability is a headline feature — a silent skip here
+        # once hid a broken SHAP path for a whole run.
+        print(f"[shap] *** WARNING: explainability SKIPPED *** {e}")
 
     with open(OUT / "results.json", "w") as f:
         json.dump(results, f, indent=2)

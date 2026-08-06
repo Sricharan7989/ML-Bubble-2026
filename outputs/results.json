@@ -9,6 +9,21 @@
       "test": 6000
     }
   },
+  "persistence": {
+    "files": {
+      "Logistic Regression": "logistic_regression.joblib",
+      "Random Forest": "random_forest.joblib",
+      "XGBoost": "xgboost.json",
+      "LightGBM": "lightgbm.txt"
+    },
+    "feature_names": "feature_names.json",
+    "reload_max_abs_prob_diff": {
+      "Logistic Regression": 0.0,
+      "Random Forest": 3.33e-16,
+      "XGBoost": 0.0,
+      "LightGBM": 0.0
+    }
+  },
   "val_auprc": {
     "Logistic Regression": 0.493,
     "Random Forest": 0.5508,
@@ -68,10 +83,11 @@
     }
   ],
   "fairness": {
-    "target_tpr": 0.7679,
+    "target_tpr_source": "validation",
+    "target_tpr": 0.7919,
     "group_thresholds": {
-      "1": 0.4,
-      "2": 0.38
+      "1": 0.385,
+      "2": 0.36
     },
     "before": [
       {
@@ -92,19 +108,19 @@
     "after": [
       {
         "group": "Male",
-        "threshold": 0.4,
+        "threshold": 0.385,
         "n": 2402,
-        "selection_rate": 0.4459,
-        "TPR": 0.7433,
-        "FPR": 0.3552
+        "selection_rate": 0.4696,
+        "TPR": 0.7665,
+        "FPR": 0.3791
       },
       {
         "group": "Female",
-        "threshold": 0.38,
+        "threshold": 0.36,
         "n": 3598,
-        "selection_rate": 0.4491,
-        "TPR": 0.7546,
-        "FPR": 0.3665
+        "selection_rate": 0.4844,
+        "TPR": 0.7794,
+        "FPR": 0.4047
       }
     ],
     "gaps_before": {
@@ -114,10 +130,10 @@
       "disparate_impact_ratio": 0.9446
     },
     "gaps_after": {
-      "demographic_parity_diff": 0.0032,
-      "equal_opportunity_diff": 0.0113,
-      "fpr_diff": 0.0113,
-      "disparate_impact_ratio": 0.9929
+      "demographic_parity_diff": 0.0148,
+      "equal_opportunity_diff": 0.0129,
+      "fpr_diff": 0.0256,
+      "disparate_impact_ratio": 0.9694
     }
   },
   "explainability": {

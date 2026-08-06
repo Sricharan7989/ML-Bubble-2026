@@ -10,22 +10,21 @@ Run:  streamlit run app/dashboard.py
 """
 from __future__ import annotations
 import json
-import pickle
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import streamlit as st
 
-from src.data_prep import engineer, clean, TARGET
+from src.data_prep import build_features
 from src.explain import top_reason_codes
+from src.persistence import load_model, load_feature_names
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS = json.load(open(ROOT / "outputs" / "results.json"))
+RESULTS = json.loads((ROOT / "outputs" / "results.json").read_text(encoding="utf-8"))
 WINNER = RESULTS["winner"]
 THRESHOLD = RESULTS["cost_threshold"]["optimal_threshold"]
-MODEL = pickle.load(open(ROOT / "models" /
-                        f"{WINNER.replace(' ', '_').lower()}.pkl", "rb"))
+MODEL = load_model(WINNER, ROOT / "models")
+FEATURES = load_feature_names(ROOT / "models")   # canonical training column order
 
 st.set_page_config(page_title="Credit-Risk Scorer", layout="wide")
 st.title("💳 Explainable, Fairness-Audited Credit-Risk Scorer")
@@ -67,9 +66,8 @@ with tab1:
             raw[f"PAY_{i+1}"] = pay[i]
             raw[f"BILL_AMT{i+1}"] = bill[i]
             raw[f"PAY_AMT{i+1}"] = paid[i]
-        df = engineer(clean(pd.DataFrame([raw])))
-        feats = [c for c in df.columns if c != TARGET]
-        p = float(MODEL.predict_proba(df[feats])[:, 1][0])
+        X = build_features(raw, FEATURES)
+        p = float(MODEL.predict_proba(X)[:, 1][0])
         decision = "DECLINE" if p >= THRESHOLD else "APPROVE"
         m1, m2 = st.columns(2)
         m1.metric("Default probability", f"{p:.1%}")
@@ -77,7 +75,7 @@ with tab1:
                   delta="above threshold" if decision == "DECLINE" else "below",
                   delta_color="inverse")
         st.progress(min(p, 1.0))
-        codes = top_reason_codes(MODEL, df[feats].to_numpy()[0], feats, k=5)
+        codes = top_reason_codes(MODEL, X.to_numpy()[0], FEATURES, k=5)
         st.subheader("Reason codes (why this decision)")
         st.dataframe(pd.DataFrame(
             [{"Feature": f, "Impact on risk": round(s, 3),

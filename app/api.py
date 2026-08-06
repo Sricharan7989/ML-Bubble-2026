@@ -11,25 +11,22 @@ Docs: http://localhost:8000/docs
 """
 from __future__ import annotations
 import json
-import pickle
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from src.data_prep import engineer, clean, TARGET
+from src.data_prep import build_features
 from src.explain import top_reason_codes
+from src.persistence import load_model, load_feature_names
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS = json.load(open(ROOT / "outputs" / "results.json"))
+RESULTS = json.loads((ROOT / "outputs" / "results.json").read_text(encoding="utf-8"))
 WINNER = RESULTS["winner"]
 THRESHOLD = RESULTS["cost_threshold"]["optimal_threshold"]
-MODEL = pickle.load(open(ROOT / "models" /
-                        f"{WINNER.replace(' ', '_').lower()}.pkl", "rb"))
-FEATURES = None  # resolved lazily on first call
+MODEL = load_model(WINNER, ROOT / "models")
+FEATURES = load_feature_names(ROOT / "models")   # canonical training column order
 
 app = FastAPI(title="Credit-Risk Scoring API", version="1.0",
               description="Explainable, fairness-audited credit default scoring.")
@@ -50,12 +47,9 @@ class Applicant(BaseModel):
 
 
 def _row_to_features(a: Applicant) -> pd.DataFrame:
-    raw = a.dict()                        # already uses PAY_1..PAY_6
-    df = engineer(clean(pd.DataFrame([raw])))
-    global FEATURES
-    if FEATURES is None:
-        FEATURES = [c for c in df.columns if c != TARGET]
-    return df[FEATURES]
+    # build_features reindexes to the persisted training column order, so the
+    # field order of this model can never affect the score.
+    return build_features(a.model_dump(), FEATURES)
 
 
 @app.get("/health")

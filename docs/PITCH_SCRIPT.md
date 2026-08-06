@@ -19,28 +19,38 @@ lenders must give the *reason* for a rejection. We built for all three."
 
 **[0:45 — Slides 3–4, Data & method]**
 "We used the UCI Taiwan dataset — **30,000** real clients, a genuinely imbalanced
-**22%** default rate. We engineered **42** behavioural features from the
-six-month repayment panel. The whole pipeline is leakage-safe: the test set is
-touched exactly once, so every number you're about to see is honest."
+**22%** default rate. We engineered **19** behavioural features out of the
+six-month repayment panel — utilisation, repayment ratios, delinquency counts —
+for **42** in total. The whole pipeline is leakage-safe: model choice, the cost
+threshold, and the fairness thresholds are all decided on validation, and the
+test set is touched exactly once. Every number you're about to see is honest."
 
 **[1:10 — Slide 5, Comparative analysis]**
 "We compared four models, simplest to strongest. The linear baseline is fine, but
 gradient boosting adds real signal. **XGBoost wins** — AUROC **0.78**, and more
 importantly AUPRC **0.56**. We lead with AUPRC because on a 22%-positive problem,
 plain accuracy is a trap — you'd score 78% just predicting 'no default' for
-everyone."
+everyone. And we picked the winner on *validation*, before we ever opened the
+test set."
 
 **[1:40 — Slide 6, Cost]**
 "Now the deployment thinking. A 0.5 threshold is an accident, not a decision.
-Under a realistic 5-to-1 cost ratio, the optimal cutoff is **0.355** — and that
-single change cuts expected cost per applicant by **3.2%** on the test set."
+Under a realistic 5-to-1 cost ratio, the optimal cutoff is **0.375** — worth a
+**1.8%** cut in expected cost per applicant on the test set. Modest, because the
+cost curve is flat near the minimum — but the operating point is now a business
+decision with a stated cost ratio, not an unexamined default."
 
 **[2:05 — Slide 7, Fairness — slow down here]**
-"This is our differentiator. We audited the model across sex and found a bias gap.
-Then we mitigated it with per-group thresholds — a deploy-time control that
-doesn't touch the model. The equal-opportunity gap dropped from **0.028 to
-0.001** — a **97%** reduction — with no loss of ranking power. Disparate impact
-went from 0.94 to 0.99."
+"This is our differentiator. We audited across sex and found a real gap:
+equal-opportunity difference **0.016**, disparate impact **0.94**. Per-group
+thresholds — a deploy-time control that never touches the model — narrow that to
+**0.013**, and lift disparate impact to **0.97**.
+
+Here's the part we want to be straight about: equalising true-positive rate
+alone made the *false*-positive gap slightly worse, 0.020 to 0.026. That's the
+known limitation of optimising equal opportunity in isolation, and it's why the
+next step is equalized odds, which constrains both rates together. We'd rather
+show you the metric that moved the wrong way than hide it."
 
 **[2:30 — Slide 8, Explainability]**
 "And every decision is explainable. SHAP turns the model into ranked reason
@@ -64,7 +74,13 @@ Thank you."
 - **"Isn't 0.78 AUROC low?"** → "It's in line with the published benchmark for
   this dataset (Yeh & Lien). We optimised for honest, leakage-free numbers and for
   AUPRC/cost/fairness, not for a vanity AUC."
-- **"Does the fairness fix hurt accuracy?"** → "No — AUPRC is unchanged; we only
-  move per-group operating points, not the model."
+- **"Does the fairness fix hurt accuracy?"** → "Ranking quality is untouched —
+  AUPRC is identical, because we only move per-group operating points, not the
+  model. The cost is a slightly wider FPR gap, which we report openly."
+- **"Your fairness gain looks small."** → "It is — because the baseline gap was
+  already small (0.016, and disparate impact 0.94 already passes the
+  four-fifths rule). We'd rather report a real 20% narrowing than manufacture a
+  dramatic one. The contribution is the audit-and-mitigate *machinery*, which
+  works the same way when the gap is large."
 - **"Would this work in India?"** → "The method transfers directly; you'd retrain
   on local, current data and re-run the same audit."

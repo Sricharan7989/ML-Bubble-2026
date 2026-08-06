@@ -88,6 +88,27 @@ def prepare(path: str):
     return df, X, y, feature_cols
 
 
+def build_features(raw, feature_names=None) -> pd.DataFrame:
+    """Raw applicant record(s) -> model-ready feature frame.
+
+    The single entry point used by main.py, the API, and the dashboard. Passing
+    ``feature_names`` (from models/feature_names.json) reindexes the frame to the
+    exact training column order, so serving cannot drift from training — a
+    mismatch here previously made XGBoost reject every dashboard request with
+    "feature_names mismatch".
+    """
+    if isinstance(raw, dict):
+        raw = [raw]
+    if not isinstance(raw, pd.DataFrame):
+        raw = pd.DataFrame(raw)
+
+    df = engineer(clean(raw))
+    if feature_names is None:
+        return df[[c for c in df.columns if c != TARGET]]
+    return (df.reindex(columns=list(feature_names), fill_value=0.0)
+              .fillna(0.0).astype(float))
+
+
 def split(X: pd.DataFrame, y: pd.Series):
     """Stratified 64 / 16 / 20 train / val / test split (seeded)."""
     X_tmp, X_test, y_tmp, y_test = train_test_split(
