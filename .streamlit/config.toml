@@ -1,0 +1,41 @@
+# FairCredit dashboard theme — navy + emerald, matched to the slide deck.
+# Defining only [theme] (no [theme.light]) locks the app to this single look,
+# which is what we want for a consistent demo.
+
+[theme]
+base = "dark"
+primaryColor = "#10B981"              # emerald — buttons, focus, active elements
+backgroundColor = "#0B1F33"           # navy — main canvas
+secondaryBackgroundColor = "#13324F"  # lighter navy — widgets, cards, expanders
+textColor = "#F1F5F9"                 # slate-100
+font = "sans-serif"
+
+# --- polish -------------------------------------------------------------
+linkColor = "#34D399"
+borderColor = "#1E4A70"
+codeBackgroundColor = "#0E2740"
+codeTextColor = "#A7F3D0"
+baseRadius = "8px"
+buttonRadius = "8px"
+showWidgetBorder = true
+linkUnderline = false
+headingFontWeights = [700, 600, 600, 600, 600, 600]
+
+# --- semantic colors ----------------------------------------------------
+# greenColor / redColor drive st.badge and :green-badge[...] markdown.
+# The red is #DC2626 rather than a rose: validated at OKLab deutan ΔE 12.8
+# against the emerald (rose #F43F5E scores only 5.6), so the approve/decline
+# distinction survives red-green colour blindness.
+greenColor = "#10B981"
+redColor = "#DC2626"
+orangeColor = "#F59E0B"
+blueColor = "#38BDF8"
+grayColor = "#94A3B8"
+
+# Chart palette for Plotly/Altair. Emerald first, danger red second.
+chartCategoricalColors = ["#10B981", "#DC2626", "#38BDF8", "#F59E0B", "#A78BFA", "#F472B6", "#94A3B8"]
+
+[theme.sidebar]
+backgroundColor = "#0E2740"
+secondaryBackgroundColor = "#13324F"
+borderColor = "#1E4A70"
